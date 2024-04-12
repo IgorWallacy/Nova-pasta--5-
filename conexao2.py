@@ -59,21 +59,37 @@ def fechar_conexao(connection):
 
 # Exemplo de uso
 def atualizarIP():
+    
     global server_ip  # Declare server_ip como global
     global tipo_servidor
+    global filial
+    global pdv
+    
     server_ip = None
     tipo_servidor = None
+    filial = None
+    pdv = None
     
     conexao = conectar_postgresql("postgres", "postgres", "localhost", "5432", "unico")
     if conexao:
+        
         resultado = executar_consulta(conexao, "SELECT valor FROM configuracaopdv WHERE chave='BaseRemota.Url' AND perfil='default';")
         resultadoTipoServidor = executar_consulta(conexao, "SELECT valor FROM configuracaopdv WHERE chave='Pdv.TipoServidor' AND perfil='default';")
+        resultadoFilial = executar_consulta(conexao, "SELECT valor FROM configuracaopdv WHERE chave='Pdv.Filial' AND perfil='default';")
+        resultadoPdv = executar_consulta(conexao, "SELECT valor FROM configuracaopdv WHERE chave='Pdv.Numero' AND perfil='default';")
+        
         if resultado:
             # Acessando o primeiro elemento da primeira tupla retornada
             server_ip = str(resultado[0][0])  # Convertendo para string
         if resultadoTipoServidor:
             # Acessando o primeiro elemento da primeira tupla retornada
             tipo_servidor = resultadoTipoServidor[0][0]  
+        if resultadoFilial:
+            # Acessando o primeiro elemento da primeira tupla retornada
+            filial = resultadoFilial[0][0] 
+        if resultadoPdv:
+            # Acessando o primeiro elemento da primeira tupla retornada
+            pdv = resultadoPdv[0][0]   
             
     fechar_conexao(conexao)
 
@@ -110,7 +126,7 @@ def switch_case(tipo):
 
 def check_network_connection(server_ip):
     servidor = switch_case(tipo_servidor)
-    print(servidor["porta"])
+   # print(servidor["porta"])
     
     try:
             ip_address = socket.gethostbyname(server_ip)
@@ -123,9 +139,9 @@ def check_network_connection(server_ip):
 def check_internet_connection(ip):
     try:
         socket.create_connection((ip, 80))
-        return "| Conectado à internet | "
+        return True
     except OSError:
-        return "| Desconectado da internet | "
+        return False
 
 def get_computer_name():
     return socket.gethostname()
@@ -151,12 +167,21 @@ def update_status():
         # Se o IP do servidor foi carregado com sucesso
         if check_network_connection(server_ip) == "Conectado":
             status_label.config(text="Conectado ao "+ servidor["descricao"] , foreground="green")
-            internet_status_label.config(text=check_internet_connection("www.google.com"))
             icon_label.config(image=connected_icon)
-           
+            if check_internet_connection("www.google.com"):
+                internet_status_label.config(text="| Conectado à internet |" , foreground="green")
+                
+            else:
+                internet_status_label.config(text="| Desconectado da internet |" , foreground="red")
+              
         else:
             status_label.config(text="Desconectado do "+servidor["descricao"], foreground="red")
             icon_label.config(image=disconnected_icon)
+            if check_internet_connection("www.google.com"):
+                internet_status_label.config(text="| Conectado à internet |" , foreground="green")
+            else:
+                internet_status_label.config(text="| Desconectado da internet |", foreground="red")
+               
            
     else:
        
@@ -164,16 +189,22 @@ def update_status():
         status_label.config(text="Erro ao carregar o IP do servidor", foreground="red")
 
     # Verifica a conexão com a internet
-        internet_status_label.config(text=check_internet_connection("www.google.com"))
+     #   internet_status_label.config(text=check_internet_connection("www.google.com"))
 
     # Atualiza o nome do computador
-    computer_name_label.config(text="Nome do computador: " + get_computer_name())
+    computer_name_label.config(text="| Nome do computador: " + get_computer_name())
 
     # Atualiza o IP do servidor
-    server_ip_label.config(text="IP do servidor: " + str(server_ip))
+    server_ip_label.config(text="| IP do servidor: " + str(server_ip))
     
     # Atualiza o IP local
-    local_ip_label.config(text="Meu ip: " + get_local_ip())
+    local_ip_label.config(text="| Meu ip: " + get_local_ip())
+    
+    # Atualiza a loja local
+    local_filial_label.config(text="| Código da Filial : " + filial )
+    
+    # Atualiza o IP local
+    local_pdv_label.config(text="| Número do PDV : " + pdv )
     
     
    
@@ -211,7 +242,7 @@ image_height = 15
 root = Tk()  # Criar a janela principal
 root.title("")
 root.overrideredirect(True)  # Remove a barra de título da janela
-root.geometry("1150x20+0-1")  # Define a posição da janela 50 pixels acima do rodapé e alinhada à esquerda
+root.geometry("1500x20+0-1")  # Define a posição da janela 50 pixels acima do rodapé e alinhada à esquerda
 root.lift()  # Garante que a janela fique acima de todas as outras janelas
 root.wm_attributes("-topmost", True)  # Mantém a janela sempre no topo
 root.wm_attributes("-transparentcolor", "gray")  # Define a cor branca como transparente
@@ -228,25 +259,33 @@ disconnected_base64_resized = base64_to_resized_base64(disconnected_base64, imag
 disconnected_icon = PhotoImage(data=disconnected_base64_resized)
 
 icon_label = Label(root, image=connected_icon)
-icon_label.pack(side=LEFT, padx=5)
+icon_label.pack(side=LEFT, padx=1)
 
 status_label = Label(root, text="Aguardando...", font=("Helvetica", 12))
-status_label.pack(side=LEFT, padx=5)
+status_label.pack(side=LEFT, padx=1)
 
 internet_status_label = Label(root, text="", font=("Helvetica", 12))
-internet_status_label.pack(side=LEFT, padx=5)
+internet_status_label.pack(side=LEFT, padx=1)
 
 # Rótulo para o nome do computador
 computer_name_label = Label(root, text="", font=("Helvetica", 12))
-computer_name_label.pack(side=LEFT, padx=5)
+computer_name_label.pack(side=LEFT, padx=1)
 
 # Rótulo para o IP do servidor
 server_ip_label = Label(root, text="", font=("Helvetica", 12))
-server_ip_label.pack(side=LEFT, padx=5)
+server_ip_label.pack(side=LEFT, padx=1)
 
 # Rótulo para o IP local
 local_ip_label = Label(root, text="", font=("Helvetica", 12))
-local_ip_label.pack(side=LEFT, padx=5)
+local_ip_label.pack(side=LEFT, padx=1)
+
+# Rótulo para o PDV 
+local_pdv_label = Label(root, text="", font=("Helvetica", 12))
+local_pdv_label.pack(side=LEFT, padx=1)
+
+# Rótulo para a Loja local
+local_filial_label = Label(root, text="", font=("Helvetica", 12))
+local_filial_label.pack(side=LEFT, padx=1)
 
 
 
