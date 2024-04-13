@@ -311,7 +311,7 @@ def update_status():
     server_ip_label.config(text="|IP do servidor:" + str(server_ip))
     
     # Atualiza o IP local
-    local_ip_label.config(text="|Meu ip:" + get_local_ip())
+    local_ip_label.config(text="|Meu IP:" + get_local_ip())
     
     # Atualiza a loja local
     local_filial_label.config(text="|Filial:" + filial )
@@ -328,6 +328,8 @@ def update_status():
 def ocultar_da_lista_alt_tab():
     root.attributes('-toolwindow', True)  # Define a janela como uma ferramenta (sem barra de título)
     root.lift()  # Eleva a janela para a frente
+    rootRodape.attributes('-toolwindow', True)  # Define a janela como uma ferramenta (sem barra de título)
+    rootRodape.lift()  # Eleva a janela para a frente
     style = Style()   
 
     # Define o estilo do ttk para 'alt'
@@ -336,6 +338,7 @@ def ocultar_da_lista_alt_tab():
     if verificar_processo("UniNfce.exe"):
     # Mostrar a janela
         root.deiconify()
+        rootRodape.deiconify()
     else:
     # Reiniciar toda a aplicação
        # root.destroy()
@@ -389,6 +392,35 @@ root.configure(bg=background_color)
 
 
 root.deiconify()
+
+# Criando a janela principal
+rootRodape = tk.Tk()
+rootRodape.geometry("400x20+0-1")
+
+rootRodape.overrideredirect(True) # Ocultar a janela da lista Alt+Tab
+rootRodape.attributes('-topmost', True)
+rootRodape.lift()  # Garante que a janela fique acima de todas as outras janelas
+# root.wm_attributes("-transparentcolor", "black" )  # Define a cor branca como transparente
+rootRodape.attributes('-alpha', 1.0)  # Define a opacidade da janela 
+rootRodape.configure(background="#D3D3D3")
+# Criando o frame para o rodapé
+footer_frame = tk.Frame(rootRodape)
+footer_frame.place(relx=0, rely=0.0, relwidth=1, relheight=1)
+
+# Labels do rodapé
+label1 = tk.Label(footer_frame, text="| CTRL+T -> Solicitar Suporte Remoto |", bg="light gray", fg="blue")
+label1.place(relx=0.00, rely=0.5, anchor="w")
+
+label2 = tk.Label(footer_frame, text="| CTRL+S -> Desligar o Computador |", bg="light gray", fg="red")
+label2.place(relx=1.00, rely=0.5, anchor="e")
+
+
+
+
+
+
+
+
 # Convertendo imagens para base64 redimensionadas
 connected_base64_resized = base64_to_resized_base64(connected_base64, image_width, image_height)
 connected_icon = PhotoImage(data=connected_base64_resized)
