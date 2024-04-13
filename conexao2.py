@@ -8,6 +8,7 @@ import locale
 from PIL import Image, ImageTk
 import io
 import sys
+import keyboard
 import subprocess
 import socket
 import base64
@@ -28,9 +29,18 @@ global_image_reference = None
 # Define a localização para português do Brasil
 locale.setlocale(locale.LC_TIME, 'pt_BR')
 
+
+
 def restart_program():
     python = sys.executable
     os.execl(python, python, *sys.argv)
+    
+def open_teamviewer():
+    subprocess.Popen(["C:\Program Files (x86)\TeamViewer\TeamViewer.exe"])
+
+def shutdown_computer():
+    subprocess.Popen(["shutdown", "/s", "/t", "0"])
+
 
 def conectar_postgresql(usuario, senha, host, porta, banco_dados):
     try:
@@ -257,7 +267,9 @@ if not verificar_processo("UniNfce.exe"):
     exibir_cronometro()
 
 def update_status():
-   
+    
+    keyboard.add_hotkey('ctrl+t', open_teamviewer)
+    keyboard.add_hotkey('ctrl+d', shutdown_computer)
     atualizarIP()
    
     servidor = switch_case(tipo_servidor)
@@ -420,6 +432,8 @@ label_hora.pack(side=LEFT,padx="0")
 # Inicia a verificação de status
 update_status()
 atualizar_data_hora()
+
+
 
 
 root.mainloop()
