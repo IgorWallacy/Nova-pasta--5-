@@ -1,15 +1,18 @@
 from tkinter import *
 from tkinter.ttk import *
+
 import socket
 import base64
 from io import BytesIO
 from PIL import Image
 import os
-
+import psutil
 import psycopg2
 from psycopg2 import Error
 
 #pyinstaller --onefile -w seu_script.py
+
+
 
 def conectar_postgresql(usuario, senha, host, porta, banco_dados):
     try:
@@ -56,6 +59,13 @@ def fechar_conexao(connection):
 
     except (Exception, Error) as error:
         print("Erro ao fechar a conexão:", error)
+        
+# Função para verificar se o processo "UNIPaf" está em execução
+def verificar_processo():
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] == 'UNIPaf.exe':
+            return True
+    return False
 
 # Exemplo de uso
 def atualizarIP():
@@ -153,7 +163,13 @@ def get_local_ip():
         return local_ip
     except socket.gaierror:
         return "Não disponível"
-
+    
+# Função para verificar se o processo "UNIPaf" está em execução
+def verificar_processo():
+    for proc in psutil.process_iter(['name']):
+        if proc.info['name'] == 'UniNfce.exe':
+            return True
+    return False
 
 def update_status():
    
@@ -209,12 +225,25 @@ def update_status():
     
    
     
-   
+    ocultar_da_lista_alt_tab()
     
     # Agenda a próxima verificação após 60 segundos
     root.after(6000, update_status)
     
-    
+def ocultar_da_lista_alt_tab():
+    root.attributes('-toolwindow', True)  # Define a janela como uma ferramenta (sem barra de título)
+    root.lift()  # Eleva a janela para a frente
+    style = Style()
+
+    # Defina a cor de fundo para todos os widgets TFrame
+    style.configure('TFrame', background='#AD8FD2')
+
+    # Define o estilo do ttk para 'alt'
+    style.theme_use('alt')
+    if verificar_processo():
+        root.deiconify()  # Mostrar a janela
+    else:
+        root.withdraw()  # Ocultar a janela
 
 # Função para converter base64 para imagem e redimensioná-la
 def base64_to_resized_base64(base64_string, width, height):
@@ -236,22 +265,32 @@ disconnected_base64 = "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AAAABHNCSVQIC
 
 
 # Largura e altura desejadas para as imagens
-image_width = 15
-image_height = 15
+image_width = 20
+image_height = 20
 
 root = Tk()  # Criar a janela principal
+# Obter a largura da tela
+largura_tela = root.winfo_screenwidth()
 root.title("")
 root.overrideredirect(True)  # Remove a barra de título da janela
-root.geometry("1500x20+0-1")  # Define a posição da janela 50 pixels acima do rodapé e alinhada à esquerda
+#root.geometry("2000x22+0-1")  # Define a posição da janela 50 pixels acima do rodapé e alinhada à esquerda
+root.geometry(f"{largura_tela}x22+0-1")
+root.overrideredirect(True) # Ocultar a janela da lista Alt+Tab
+root.attributes('-topmost', True)
 root.lift()  # Garante que a janela fique acima de todas as outras janelas
-root.wm_attributes("-topmost", True)  # Mantém a janela sempre no topo
-root.wm_attributes("-transparentcolor", "gray")  # Define a cor branca como transparente
-root.attributes('-alpha', 1.0)  # Define a opacidade da janela para 50%
+#root.wm_attributes("-transparentcolor", "#AD8FD2" )  # Define a cor branca como transparente
+root.attributes('-alpha', 1.5)  # Define a opacidade da janela 
+# Defina a cor de fundo
+background_color = "#D9D9D9"
+# Definir a cor de fundo para todos os widgets ttk
 
-# Estilo minimalista para a janela
-style = Style()
-style.theme_use('clam')  # Define o estilo do ttk para 'clam', que é mais minimalista
 
+root.configure(bg=background_color)
+
+
+
+
+root.deiconify()
 # Convertendo imagens para base64 redimensionadas
 connected_base64_resized = base64_to_resized_base64(connected_base64, image_width, image_height)
 connected_icon = PhotoImage(data=connected_base64_resized)
@@ -259,33 +298,33 @@ disconnected_base64_resized = base64_to_resized_base64(disconnected_base64, imag
 disconnected_icon = PhotoImage(data=disconnected_base64_resized)
 
 icon_label = Label(root, image=connected_icon)
-icon_label.pack(side=LEFT, padx=1)
+icon_label.pack(side=LEFT, padx=0)
 
-status_label = Label(root, text="Aguardando...", font=("Helvetica", 12))
-status_label.pack(side=LEFT, padx=1)
+status_label = Label(root, text="Aguardando...", font=("Calibri", 12))
+status_label.pack(side=LEFT, padx=0)
 
-internet_status_label = Label(root, text="", font=("Helvetica", 12))
-internet_status_label.pack(side=LEFT, padx=1)
+internet_status_label = Label(root, text="", font=("Calibri", 12))
+internet_status_label.pack(side=LEFT, padx=0)
 
 # Rótulo para o nome do computador
-computer_name_label = Label(root, text="", font=("Helvetica", 12))
-computer_name_label.pack(side=LEFT, padx=1)
+computer_name_label = Label(root, text="", font=("Calibri", 12))
+computer_name_label.pack(side=LEFT, padx=0)
 
 # Rótulo para o IP do servidor
-server_ip_label = Label(root, text="", font=("Helvetica", 12))
-server_ip_label.pack(side=LEFT, padx=1)
+server_ip_label = Label(root, text="", font=("Calibri", 12))
+server_ip_label.pack(side=LEFT, padx=0)
 
 # Rótulo para o IP local
-local_ip_label = Label(root, text="", font=("Helvetica", 12))
-local_ip_label.pack(side=LEFT, padx=1)
+local_ip_label = Label(root, text="", font=("Calibri", 12))
+local_ip_label.pack(side=LEFT, padx=0)
 
 # Rótulo para o PDV 
-local_pdv_label = Label(root, text="", font=("Helvetica", 12))
-local_pdv_label.pack(side=LEFT, padx=1)
+local_pdv_label = Label(root, text="", font=("Calibri", 12))
+local_pdv_label.pack(side=LEFT, padx=0)
 
 # Rótulo para a Loja local
-local_filial_label = Label(root, text="", font=("Helvetica", 12))
-local_filial_label.pack(side=LEFT, padx=1)
+local_filial_label = Label(root, text="", font=("Calibri", 12))
+local_filial_label.pack(side=LEFT, padx=0)
 
 
 
