@@ -224,15 +224,15 @@ def exibir_cronometro():
     background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
     # Criando um frame para conter os widgets
-    frame = tk.Frame(root, bg="#f0f0f0")
+    frame = tk.Frame(root, bg="#f2f2f2")
     frame.place(relx=0.5, rely=0.1, anchor="center")
 
-    label = tk.Label(frame, text="O PDV não foi iniciado. Aguardando 45 segundos!", font=("Calibri", 16), bg="#f2f2f2")
+    label = tk.Label(frame, text="O PDV não foi iniciado. Aguardando 45 segundos!", font=("Calibri", 16), bg="blue")
     label.pack()
 
     segundos_restantes = 15
     while segundos_restantes > 0:
-        label.config(text="Aguardando {} segundos para abrir automaticamente o software de vendas!".format(segundos_restantes), font=("Calibri", 24), bg="#f2f2f2")
+        label.config(text="Aguardando {} segundos para abrir automaticamente o software de vendas!".format(segundos_restantes), font=("Calibri", 24), bg="#f2f2f2", foreground="green")
         segundos_restantes -= 1
         root.update()
         time.sleep(1)
@@ -268,7 +268,7 @@ def update_status():
         # Se o IP do servidor foi carregado com sucesso
         if check_network_connection(server_ip) == "Conectado":
             status_label.config(text="Conectado ao "+ servidor["descricao"] , foreground="green")
-           # icon_label.config(image=connected_icon)
+            icon_label.config(image=connected_icon)
             if check_internet_connection("www.google.com"):
                 internet_status_label.config(text="| Conectado à internet |" , foreground="green")
                 
@@ -277,7 +277,7 @@ def update_status():
               
         else:
             status_label.config(text="Desconectado do "+servidor["descricao"], foreground="red")
-           # icon_label.config(image=disconnected_icon)
+            icon_label.config(image=disconnected_icon)
             if check_internet_connection("www.google.com"):
                 internet_status_label.config(text="| Conectado à internet |" , foreground="green")
             else:
@@ -383,8 +383,8 @@ connected_icon = PhotoImage(data=connected_base64_resized)
 disconnected_base64_resized = base64_to_resized_base64(disconnected_base64, image_width, image_height)
 disconnected_icon = PhotoImage(data=disconnected_base64_resized)
 
-#icon_label = Label(root, image=connected_icon)
-#icon_label.pack(side=LEFT, padx=0)
+icon_label = Label(root, image=connected_icon)
+icon_label.pack(side=LEFT, padx=0)
 
 status_label = Label(root, text="Aguardando...", font=("Calibri", 12))
 status_label.pack(side=LEFT, padx=0)
