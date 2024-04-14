@@ -36,11 +36,11 @@ def restart_program():
     os.execl(python, python, *sys.argv)
     
 def open_teamviewer():
-    print('Teamviewer acionado por CRTL + T')
+    print('Teamviewer acionado por CRTL + 1')
     subprocess.Popen(["C:\Program Files (x86)\TeamViewer\TeamViewer.exe"])
 
 def shutdown_computer():
-    print('Usuário apertou CTRL + s para desligar o computador')
+    print('Usuário apertou CTRL + 4 para desligar o computador')
     subprocess.Popen(["shutdown", "/s", "/t", "0"])
 
 
@@ -218,13 +218,14 @@ def redimensionar_imagem(image, width, height):
 # Função para exibir uma janela com um cronômetro
 def exibir_cronometro():
     root = tk.Tk()
-    #root.title("Cronômetro - Verificando se o PDV está em execução!")
+    root.title("Sistema JJ e Sistema Uniplus -> Mais gestão ao seu negócio")
 
     # Configurando a janela para tela cheia
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
     root.attributes('-fullscreen', True)
-
+    root.attributes('-toolwindow', True)  # Define a janela como uma ferramenta (sem barra de título)
+    root.lift()  # Eleva a janela para a frente
     # Convertendo a imagem base64 para o formato de imagem do tkinter e redimensionando
     img_data = base64.b64decode(fundo_base64.background_base64)
     image = Image.open(io.BytesIO(img_data))
@@ -239,18 +240,18 @@ def exibir_cronometro():
     frame = tk.Frame(root, bg="#f2f2f2")
     frame.place(relx=0.5, rely=0.1, anchor="center")
 
-    label = tk.Label(frame, text="O PDV não foi iniciado. Aguardando 45 segundos!", font=("Calibri", 16), bg="blue")
+    label = tk.Label(frame, text="O PDV não foi iniciado. Aguardando 15 segundos!", font=("Calibri", 16), bg="blue")
     label.pack()
 
     segundos_restantes = 15
     while segundos_restantes > 0:
-        label.config(text="Aguardando {} segundos para abrir automaticamente o software de vendas!".format(segundos_restantes), font=("Calibri", 24), bg="#f2f2f2", foreground="green")
+        label.config(text="Aguardando {} segundos para abrir o software de vendas!".format(segundos_restantes), font=("Calibri", 24), bg="#f2f2f2", foreground="green")
         segundos_restantes -= 1
         root.update()
         time.sleep(1)
 
         if verificar_processo("UniNfce.exe"):
-            label.config(text="UniNfce foi iniciado! Fechando o cronômetro...")
+            label.config(text="UniNfce foi iniciado! ...")
             root.update()
             time.sleep(2)
             root.destroy() 
@@ -261,7 +262,7 @@ def exibir_cronometro():
     time.sleep(2)
     root.destroy()
     segundos_restantes -= 1
-    iniciar_aplicativo("E:/uniplus/uninfce.exe")
+    iniciar_aplicativo("C:/uniplus/uninfce.exe")
 
 # Verificar se o processo está em execução
 if not verificar_processo("UniNfce.exe"):
@@ -270,8 +271,8 @@ if not verificar_processo("UniNfce.exe"):
 
 def update_status():
     
-    keyboard.add_hotkey('ctrl+t', open_teamviewer)
-    keyboard.add_hotkey('ctrl+d', shutdown_computer)
+    keyboard.add_hotkey('ctrl+1', open_teamviewer)
+    keyboard.add_hotkey('ctrl+4', shutdown_computer)
     atualizarIP()
    
     servidor = switch_case(tipo_servidor)
@@ -397,7 +398,7 @@ root.deiconify()
 
 # Criando a janela principal
 rootRodape = tk.Tk()
-rootRodape.geometry("400x20+0-1")
+rootRodape.geometry("410x20+0-1")
 
 rootRodape.overrideredirect(True) # Ocultar a janela da lista Alt+Tab
 rootRodape.attributes('-topmost', True)
@@ -410,10 +411,10 @@ footer_frame = tk.Frame(rootRodape)
 footer_frame.place(relx=0, rely=0.0, relwidth=1, relheight=1)
 
 # Labels do rodapé
-label1 = tk.Label(footer_frame, text="| CTRL+T -> Solicitar Suporte Remoto |", bg="light gray", fg="blue")
+label1 = tk.Label(footer_frame, text="| CTRL+1 -> Solicitar Suporte Remoto |", bg="light gray", fg="blue")
 label1.place(relx=0.00, rely=0.5, anchor="w")
 
-label2 = tk.Label(footer_frame, text="| CTRL+S -> Desligar o Computador |", bg="light gray", fg="red")
+label2 = tk.Label(footer_frame, text="| CTRL+4 -> Desligar o Computador |", bg="light gray", fg="red")
 label2.place(relx=1.00, rely=0.5, anchor="e")
 
 
@@ -468,7 +469,8 @@ update_status()
 atualizar_data_hora()
 
 
-
+keyboard.add_hotkey('ctrl+1', open_teamviewer)
+keyboard.add_hotkey('ctrl+4', shutdown_computer)
 
 root.mainloop()
 
