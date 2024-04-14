@@ -36,9 +36,11 @@ def restart_program():
     os.execl(python, python, *sys.argv)
     
 def open_teamviewer():
+    print('Teamviewer acionado por CRTL + T')
     subprocess.Popen(["C:\Program Files (x86)\TeamViewer\TeamViewer.exe"])
 
 def shutdown_computer():
+    print('Usuário apertou CTRL + s para desligar o computador')
     subprocess.Popen(["shutdown", "/s", "/t", "0"])
 
 
