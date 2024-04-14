@@ -1,4 +1,5 @@
 import os
+from pywinauto import Application, keyboard
 from tkinter import *
 from tkinter.ttk import *
 import fundo_base64 
@@ -19,6 +20,8 @@ import time
 import psutil
 import psycopg2
 from psycopg2 import Error
+import win32api
+import winerror
 
 
 # pyinstaller --onefile -w seu_script.py
@@ -29,15 +32,53 @@ global_image_reference = None
 # Define a localização para português do Brasil
 locale.setlocale(locale.LC_TIME, 'pt_BR')
 
+def check_lock():
+    # Verifica se o arquivo de bloqueio já existe
+    if os.path.exists("lockfile"):
+        return True
+    else:
+        return False
+
+def create_lock():
+    # Cria o arquivo de bloqueio
+    try:
+        win32api.CreateFile("lockfile", win32api.GENERIC_WRITE, 0, None, win32api.CREATE_NEW, 0, None)
+    except win32api.error as e:
+        if e.winerror == winerror.ERROR_FILE_EXISTS:
+            print("O arquivo de bloqueio já existe.")
+            sys.exit(1)
+
+def release_lock():
+    # Remove o arquivo de bloqueio
+    os.remove("lockfile")
 
 
 def restart_program():
+    # Obtém o caminho para o executável Python
     python = sys.executable
+    
+    # Se o arquivo de bloqueio existir, remove-o
+    if os.path.exists("lockfile"):
+        os.remove("lockfile")
+    
+    # Reinicia o programa
     os.execl(python, python, *sys.argv)
     
 def open_teamviewer():
-    print('Teamviewer acionado por CRTL + 1')
-    subprocess.Popen(["C:\Program Files (x86)\TeamViewer\TeamViewer.exe"])
+    print('Teamviewer (x86) acionado por CRTL + 1')
+    paths = [
+        "C:/Program Files (x86)/TeamViewer/TeamViewer.exe",
+        "C:/Program Files/TeamViewer/TeamViewer.exe"
+    ]
+
+    for path in paths:
+        try:
+            subprocess.Popen([path])
+            break  # Interrompe o loop se o TeamViewer for aberto com sucesso
+        except FileNotFoundError:
+            print(f"Arquivo não encontrado em: {path}")
+    else:
+        print("Nenhum caminho válido encontrado para o TeamViewer")
 
 def shutdown_computer():
     print('Usuário apertou CTRL + 4 para desligar o computador')
@@ -132,6 +173,7 @@ def atualizarIP():
 atualizarIP()
 
 
+
 def switch_case(tipo):
     switcher = {
         "0": {"descricao": "Servidor PDV", "porta": "1099"},
@@ -158,7 +200,7 @@ def switch_case(tipo):
 def atualizar_data_hora():
     
     # Obter a data e hora atual
-    data_hora_atual_ = datetime.now().strftime("%d/%m/%Y - %H:%M:%S - %A")
+    data_hora_atual_ = datetime.now().strftime("%A - %d/%m/%Y - %H:%M ")
     
     # Atualizar o rótulo com a nova data e hora
     label_hora.config(text="| Hoje é " + data_hora_atual_ + " |")
@@ -208,7 +250,25 @@ def verificar_processo(process_name):
 # Função para iniciar o aplicativo
 def iniciar_aplicativo(aplicativo_path):
     subprocess.Popen(aplicativo_path)
+     # Conecta-se ao aplicativo UniNfce.exe
+    app = Application().connect(path=aplicativo_path)
     
+    # Obtém a janela com o título "Aviso"
+    aviso_dialog = app.window(title="Aviso")
+    time.sleep(5)
+    if aviso_dialog.exists():
+       
+        # Coloca o foco no botão da janela de aviso
+        print("Encontrei a janela Aviso")
+        
+        
+        # Pressiona a tecla Enter
+           
+        keyboard.send("ENTER")
+        print('Apertando Enter')
+       
+    else :
+        print('Nao encontrei a janela de aviso')
 
 
 # Função para redimensionar a imagem para o tamanho da tela
@@ -245,7 +305,7 @@ def exibir_cronometro():
 
     segundos_restantes = 15
     while segundos_restantes > 0:
-        label.config(text="Aguardando {} segundos para abrir o software de vendas!".format(segundos_restantes), font=("Calibri", 24), bg="#f2f2f2", foreground="green")
+        label.config(text="Aguardando {} segundos para abrir o aplicativo de vendas!".format(segundos_restantes), font=("Calibri", 24), bg="#f2f2f2", foreground="green")
         segundos_restantes -= 1
         root.update()
         time.sleep(1)
@@ -273,7 +333,7 @@ def update_status():
     
     keyboard.add_hotkey('ctrl+1', open_teamviewer)
     keyboard.add_hotkey('ctrl+4', shutdown_computer)
-    atualizarIP()
+   
    
     servidor = switch_case(tipo_servidor)
    
@@ -308,7 +368,7 @@ def update_status():
      #   internet_status_label.config(text=check_internet_connection("www.google.com"))
 
     # Atualiza o nome do computador
-    computer_name_label.config(text="|Computador:" + get_computer_name())
+    computer_name_label.config(text="|Meu Computador:" + get_computer_name())
 
     # Atualiza o IP do servidor
     server_ip_label.config(text="|IP do servidor:" + str(server_ip))
@@ -317,16 +377,16 @@ def update_status():
     local_ip_label.config(text="|Meu IP:" + get_local_ip())
     
     # Atualiza a loja local
-    local_filial_label.config(text="|Filial:" + filial )
+   # local_filial_label.config(text="|Filial:" + filial )
     
     # Atualiza o IP local
-    local_pdv_label.config(text="|PDV:" + pdv )
+  #  local_pdv_label.config(text="|PDV:" + pdv )
 
     
     ocultar_da_lista_alt_tab()
     
-    # Agenda a próxima verificação após 60 segundos
-    root.after(6000, update_status)
+    # Agenda a próxima verificação após 1 segundos
+    root.after(1000, update_status)
 
 def ocultar_da_lista_alt_tab():
     root.attributes('-toolwindow', True)  # Define a janela como uma ferramenta (sem barra de título)
@@ -379,7 +439,7 @@ root.overrideredirect(True)  # Remove a barra de título da janela
 # root.geometry("2000x22+0-1")  # Define a posição da janela 50 pixels acima do rodapé e alinhada à esquerda
 # Calcule 90% da largura da tela
 nova_largura = int(largura_tela * 100)
-root.geometry(f"{nova_largura}x20+0+0")
+root.geometry(f"{nova_largura}x28+0+0")
 root.overrideredirect(True) # Ocultar a janela da lista Alt+Tab
 root.attributes('-topmost', True)
 root.lift()  # Garante que a janela fique acima de todas as outras janelas
@@ -398,7 +458,7 @@ root.deiconify()
 
 # Criando a janela principal
 rootRodape = tk.Tk()
-rootRodape.geometry("410x20+0-1")
+rootRodape.geometry("610x36+0-1")
 
 rootRodape.overrideredirect(True) # Ocultar a janela da lista Alt+Tab
 rootRodape.attributes('-topmost', True)
@@ -433,34 +493,34 @@ disconnected_icon = PhotoImage(data=disconnected_base64_resized)
 icon_label = Label(root, image=connected_icon)
 icon_label.pack(side=LEFT, padx=0)
 
-status_label = Label(root, text="Aguardando...", font=("Calibri", 12))
+status_label = Label(root, text="Procurando servidor...", font=("Calibri", 10))
 status_label.pack(side=LEFT, padx=0)
 
-internet_status_label = Label(root, text="", font=("Calibri", 12))
+internet_status_label = Label(root, text="Testando conexão com a internet", font=("Calibri", 10))
 internet_status_label.pack(side=LEFT, padx=0)
 
 # Rótulo para o nome do computador
-computer_name_label = Label(root, text="", font=("Calibri", 12))
+computer_name_label = Label(root, text="", font=("Calibri", 10))
 computer_name_label.pack(side=LEFT, padx=0)
 
 # Rótulo para o IP do servidor
-server_ip_label = Label(root, text="", font=("Calibri", 12))
+server_ip_label = Label(root, text="", font=("Calibri", 10))
 server_ip_label.pack(side=LEFT, padx=0)
 
 # Rótulo para o IP local
-local_ip_label = Label(root, text="", font=("Calibri", 12))
+local_ip_label = Label(root, text="", font=("Calibri", 10))
 local_ip_label.pack(side=LEFT, padx=0)
 
 # Rótulo para o PDV
-local_pdv_label = Label(root, text="", font=("Calibri", 12))
-local_pdv_label.pack(side=LEFT, padx=0)
+#local_pdv_label = Label(root, text="", font=("Calibri", 12))
+#local_pdv_label.pack(side=LEFT, padx=0)
 
 # Rótulo para a Loja local
-local_filial_label = Label(root, text="", font=("Calibri", 12))
-local_filial_label.pack(side=LEFT, padx=0)
+#local_filial_label = Label(root, text="", font=("Calibri", 12))
+#local_filial_label.pack(side=LEFT, padx=0)
 
 # Rótulo para a Hora
-label_hora = Label(root, text="", font=("Calibri", 12))
+label_hora = Label(root, text="", font=("Calibri", 10))
 
 label_hora.pack(side=LEFT,padx="0")
 
@@ -468,6 +528,7 @@ label_hora.pack(side=LEFT,padx="0")
 update_status()
 atualizar_data_hora()
 
+root.after(300000 , atualizarIP)
 
 keyboard.add_hotkey('ctrl+1', open_teamviewer)
 keyboard.add_hotkey('ctrl+4', shutdown_computer)
