@@ -255,7 +255,7 @@ def iniciar_aplicativo(aplicativo_path):
     
     # Obtém a janela com o título "Aviso"
     aviso_dialog = app.window(title="Aviso")
-    time.sleep(5)
+    time.sleep(20)
     if aviso_dialog.exists():
        
         # Coloca o foco no botão da janela de aviso
@@ -458,7 +458,7 @@ root.deiconify()
 
 # Criando a janela principal
 rootRodape = tk.Tk()
-rootRodape.geometry("610x36+0-1")
+rootRodape.geometry("610x30+0-1")
 
 rootRodape.overrideredirect(True) # Ocultar a janela da lista Alt+Tab
 rootRodape.attributes('-topmost', True)
