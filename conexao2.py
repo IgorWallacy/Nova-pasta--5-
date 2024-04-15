@@ -283,8 +283,9 @@ def iniciar_aplicativo(aplicativo_path):
             else:
                 logging.info('Não encontrei a janela de aviso na tentativa %d', tentativa+1)
         except Exception as e:
-            logging.error('Ocorreu um erro ao tentar encontrar a janela de aviso: %s', str(e))
+            logging.error('Ocorreu um erro ao tentar encontrar a janela de aviso: o uninfce estava fechado?: %s', str(e))
             continue  # Tenta a próxima iteração se ocorrer um erro
+            
 
     else:
         logging.warning('Não foi possível encontrar a janela de aviso após %d tentativas.', tentativa+1)
