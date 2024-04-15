@@ -22,7 +22,12 @@ import psycopg2
 from psycopg2 import Error
 import win32api
 import winerror
+import logging
+import win32gui
+import win32con
 
+# Configurar o logger
+logging.basicConfig(filename='app.log', level=logging.INFO , format='%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 # pyinstaller --onefile -w seu_script.py
 
@@ -31,6 +36,8 @@ global_image_reference = None
 
 # Define a localização para português do Brasil
 locale.setlocale(locale.LC_TIME, 'pt_BR')
+
+
 
 def check_lock():
     # Verifica se o arquivo de bloqueio já existe
@@ -45,7 +52,7 @@ def create_lock():
         win32api.CreateFile("lockfile", win32api.GENERIC_WRITE, 0, None, win32api.CREATE_NEW, 0, None)
     except win32api.error as e:
         if e.winerror == winerror.ERROR_FILE_EXISTS:
-            print("O arquivo de bloqueio já existe.")
+            logging.info("O arquivo de bloqueio já existe.")
             sys.exit(1)
 
 def release_lock():
@@ -65,7 +72,7 @@ def restart_program():
     os.execl(python, python, *sys.argv)
     
 def open_teamviewer():
-    print('Teamviewer (x86) acionado por CRTL + 1')
+    logging.info('Teamviewer (x86) acionado por CRTL + 1')
     paths = [
         "C:/Program Files (x86)/TeamViewer/TeamViewer.exe",
         "C:/Program Files/TeamViewer/TeamViewer.exe"
@@ -76,12 +83,12 @@ def open_teamviewer():
             subprocess.Popen([path])
             break  # Interrompe o loop se o TeamViewer for aberto com sucesso
         except FileNotFoundError:
-            print(f"Arquivo não encontrado em: {path}")
+            logging.info(f"Arquivo não encontrado em: {path}")
     else:
-        print("Nenhum caminho válido encontrado para o TeamViewer")
+        logging.info("Nenhum caminho válido encontrado para o TeamViewer")
 
 def shutdown_computer():
-    print('Usuário apertou CTRL + 4 para desligar o computador')
+    logging.info('Usuário apertou CTRL + 4 para desligar o computador')
     subprocess.Popen(["shutdown", "/s", "/t", "0"])
 
 
@@ -93,11 +100,11 @@ def conectar_postgresql(usuario, senha, host, porta, banco_dados):
                                       host=host,
                                       port=porta,
                                       database=banco_dados)
-        print("Conexão ao PostgreSQL bem-sucedida")
+        logging.info("Conexão ao PostgreSQL bem-sucedida")
         return connection
 
     except (Exception, Error) as error:
-        print("Erro ao conectar ao PostgreSQL:", error)
+        logging.info("Erro ao conectar ao PostgreSQL:", error)
         return None
 
 def executar_consulta(connection, consulta):
@@ -113,7 +120,7 @@ def executar_consulta(connection, consulta):
         return records
 
     except (Exception, Error) as error:
-        print("Erro ao executar a consulta:", error)
+        logging.info("Erro ao executar a consulta:", error)
         return None
 
     finally:
@@ -126,10 +133,10 @@ def fechar_conexao(connection):
         # Fechar a conexão com o banco de dados
         if connection:
             connection.close()
-            print("Conexão ao PostgreSQL fechada")
+            logging.info("Conexão ao PostgreSQL fechada")
 
     except (Exception, Error) as error:
-        print("Erro ao fechar a conexão:", error)
+        logging.info("Erro ao fechar a conexão:", error)
 
 
 
@@ -194,7 +201,7 @@ def switch_case(tipo):
 # Se a variável de ambiente não existir, retorne None
 #      return None
 # except Exception as e:
-#    print("Erro ao carregar a variável de ambiente:", e)
+#    logging.info("Erro ao carregar a variável de ambiente:", e)
 #    return None
 
 def atualizar_data_hora():
@@ -210,7 +217,7 @@ def atualizar_data_hora():
 
 def check_network_connection(server_ip):
     servidor = switch_case(tipo_servidor)
-   # print(servidor["porta"])
+   # logging.info(servidor["porta"])
     
     try:
             ip_address = socket.gethostbyname(server_ip)
@@ -238,6 +245,12 @@ def get_local_ip():
     except socket.gaierror:
         return "Não disponível"
 
+def esconder_janela(nome_janela):
+    hwnd = win32gui.FindWindow(None, nome_janela)
+    if hwnd != 0:
+        win32gui.ShowWindow(hwnd, win32con.SW_HIDE)  # Oculta a janela
+        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_TOOLWINDOW)  # Remove a janela do ALT+TAB
+        win32gui.SetWindowPos(hwnd, win32con.HWND_BOTTOM, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)  # Impede que a janela receba foco
 
 
 # Função para verificar se o processo está em execução
@@ -250,25 +263,32 @@ def verificar_processo(process_name):
 # Função para iniciar o aplicativo
 def iniciar_aplicativo(aplicativo_path):
     subprocess.Popen(aplicativo_path)
-     # Conecta-se ao aplicativo UniNfce.exe
-    app = Application().connect(path=aplicativo_path)
-    
-    # Obtém a janela com o título "Aviso"
-    aviso_dialog = app.window(title="Aviso")
-    time.sleep(20)
-    if aviso_dialog.exists():
-       
-        # Coloca o foco no botão da janela de aviso
-        print("Encontrei a janela Aviso")
-        
-        
-        # Pressiona a tecla Enter
-           
-        keyboard.send("ENTER")
-        print('Apertando Enter')
-       
-    else :
-        print('Nao encontrei a janela de aviso')
+    for tentativa in range(20):  # Tenta encontrar a janela de aviso até 60 vezes
+        time.sleep(5)  # Espera 5 segundos antes de cada tentativa
+        try:
+            # Conecta-se ao aplicativo UniNfce.exe
+            app = Application().connect(path=aplicativo_path)
+
+            # Obtém a janela com o título "Aviso"
+            aviso_dialog = app.window(title="Aviso")
+
+            if aviso_dialog.exists():
+                # Coloca o foco no botão da janela de aviso
+                logging.info("Encontrei a janela Aviso")
+                aviso_dialog.set_focus()
+                # Pressiona a tecla Enter
+                keyboard.send("ENTER")
+                logging.info('Apertando Enter')
+                break  # Sai do loop se a janela for encontrada
+            else:
+                logging.info('Não encontrei a janela de aviso na tentativa %d', tentativa+1)
+        except Exception as e:
+            logging.error('Ocorreu um erro ao tentar encontrar a janela de aviso: %s', str(e))
+            continue  # Tenta a próxima iteração se ocorrer um erro
+
+    else:
+        logging.warning('Não foi possível encontrar a janela de aviso após %d tentativas.', tentativa+1)
+
 
 
 # Função para redimensionar a imagem para o tamanho da tela
@@ -327,6 +347,7 @@ def exibir_cronometro():
 # Verificar se o processo está em execução
 if not verificar_processo("UniNfce.exe"):
     # Se o processo não estiver em execução, exibir a janela com o cronômetro
+    logging.info('Nao encontrei a janela do uniplus, abrindo cronometro')
     exibir_cronometro()
 
 def update_status():
@@ -393,6 +414,7 @@ def ocultar_da_lista_alt_tab():
     root.lift()  # Eleva a janela para a frente
     rootRodape.attributes('-toolwindow', True)  # Define a janela como uma ferramenta (sem barra de título)
     rootRodape.lift()  # Eleva a janela para a frente
+    logging.info('Ocultando o conexao2 do alt+tab e elevando a frente de todas as janelas')
     style = Style()   
 
     # Define o estilo do ttk para 'alt'
@@ -400,11 +422,13 @@ def ocultar_da_lista_alt_tab():
     
     if verificar_processo("UniNfce.exe"):
     # Mostrar a janela
+        logging.info('Encontrei o uninfce em execução, exibindo a barra de status agora')
         root.deiconify()
         rootRodape.deiconify()
     else:
     # Reiniciar toda a aplicação
        # root.destroy()
+        logging.info('Nao econtrei o uninfce, reiniciando toda a aplicação')
         restart_program()
     
       
@@ -527,11 +551,15 @@ label_hora.pack(side=LEFT,padx="0")
 # Inicia a verificação de status
 update_status()
 atualizar_data_hora()
+esconder_janela("Backup")
+esconder_janela("Bluetooth")
+
 
 root.after(300000 , atualizarIP)
 
 keyboard.add_hotkey('ctrl+1', open_teamviewer)
 keyboard.add_hotkey('ctrl+4', shutdown_computer)
+
 
 root.mainloop()
 
