@@ -25,11 +25,13 @@ import winerror
 import logging
 import win32gui
 import win32con
+import ntplib
+
 
 # Configurar o logger
 logging.basicConfig(filename='app.log', level=logging.INFO , format='%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-# pyinstaller --onefile -w seu_script.py
+# pyinstaller --onefile -w conexao2.py
 
 # Variável global para armazenar a referência da imagem
 global_image_reference = None
@@ -59,6 +61,37 @@ def release_lock():
     # Remove o arquivo de bloqueio
     os.remove("lockfile")
 
+def update_windows_time(ntp_server='time.google.com'):
+    try:
+        # Cria um objeto NTPClient
+        ntp_client = ntplib.NTPClient()
+
+        # Faz a solicitação para o servidor NTP
+        response = ntp_client.request(ntp_server)
+
+        # Obtém o tempo de resposta do servidor NTP e converte para GMT-3
+        ntp_time = response.tx_time + 3 * 3600  # 3 horas em segundos
+
+        
+
+       
+
+        # Obtém a hora local do sistema
+        local_time = time.localtime(ntp_time)
+        logging.info(f"Hora gerada para o Windows: {local_time.tm_year}-{local_time.tm_mon}-{local_time.tm_mday} {local_time.tm_hour}:{local_time.tm_min}:{local_time.tm_sec}")
+
+        # Define a nova hora do sistema no Windows
+        win32api.SetSystemTime(local_time.tm_year, local_time.tm_mon, local_time.tm_wday, 
+                               local_time.tm_mday, local_time.tm_hour, local_time.tm_min, 
+                               local_time.tm_sec, 0)  # Passamos 0 para os milissegundos
+        # Log dos parâmetros para a função SetSystemTime
+        logging.info(f"SetSystemTime Parameters: Ano: {local_time.tm_year}, Mes:{local_time.tm_mon}, Dia da semana :{local_time.tm_wday}, Dia do mes:{local_time.tm_mday}, hora:{local_time.tm_hour}, Min:{local_time.tm_min}, Segundo:{local_time.tm_sec}, 0")
+
+        logging.info("Hora do sistema atualizada com sucesso.")
+    except Exception as e:
+        logging.error(f"Erro ao atualizar a hora do sistema: {e}")
+        
+    root.after(300000, update_windows_time) #5 minutos atualiza a hora do windows
 
 def restart_program():
     # Obtém o caminho para o executável Python
@@ -186,7 +219,7 @@ def switch_case(tipo):
         "0": {"descricao": "Servidor PDV", "porta": "1099"},
         "1": {"descricao": "Servidor YODA", "porta": "8443"},
         "2": {"descricao": "Servidor Web Cloud", "porta": "8443"},
-        "3": {"descricao": "Servidor Web Local", "porta": "8080"}
+        "3": {"descricao": "Servidor Web Local", "porta": "8443"}
     }
     return switcher.get(tipo, {"descricao": "Tipo de Servidor inválido", "porta": ""})
 
@@ -263,7 +296,7 @@ def verificar_processo(process_name):
 # Função para iniciar o aplicativo
 def iniciar_aplicativo(aplicativo_path):
     subprocess.Popen(aplicativo_path)
-    for tentativa in range(20):  # Tenta encontrar a janela de aviso até 60 vezes
+    for tentativa in range(20):  # Tenta encontrar a janela de aviso até 20 vezes
         time.sleep(5)  # Espera 5 segundos antes de cada tentativa
         try:
             # Conecta-se ao aplicativo UniNfce.exe
@@ -294,7 +327,13 @@ def iniciar_aplicativo(aplicativo_path):
 
 # Função para redimensionar a imagem para o tamanho da tela
 def redimensionar_imagem(image, width, height):
-    return image.resize((width, height), Image.FIXED)
+    # Cria uma cópia da imagem para não modificar a original
+    img_copy = image.copy()
+    
+    # Redimensiona a imagem mantendo sua proporção original
+    img_copy.thumbnail((width, height), Image.ADAPTIVE)
+    
+    return img_copy
 
 # Função para exibir uma janela com um cronômetro
 def exibir_cronometro():
@@ -353,8 +392,7 @@ if not verificar_processo("UniNfce.exe"):
 
 def update_status():
     
-    keyboard.add_hotkey('ctrl+1', open_teamviewer)
-    keyboard.add_hotkey('ctrl+4', shutdown_computer)
+   
    
    
     servidor = switch_case(tipo_servidor)
@@ -550,6 +588,7 @@ label_hora = Label(root, text="", font=("Calibri", 10))
 label_hora.pack(side=LEFT,padx="0")
 
 # Inicia a verificação de status
+update_windows_time()
 update_status()
 atualizar_data_hora()
 esconder_janela("Backup")
