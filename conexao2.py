@@ -1,4 +1,5 @@
 import os
+import customtkinter as ctk
 from pywinauto import Application, keyboard
 from tkinter import *
 from tkinter.ttk import *
@@ -32,6 +33,8 @@ import ntplib
 logging.basicConfig(filename='app.log', level=logging.INFO , format='%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 # pyinstaller --onefile -w conexao2.py
+
+#bcdedit -set TESTSIGNING OFF
 
 # Variável global para armazenar a referência da imagem
 global_image_reference = None
@@ -88,10 +91,15 @@ def update_windows_time(ntp_server='time.google.com'):
         logging.info(f"SetSystemTime Parameters: Ano: {local_time.tm_year}, Mes:{local_time.tm_mon}, Dia da semana :{local_time.tm_wday}, Dia do mes:{local_time.tm_mday}, hora:{local_time.tm_hour}, Min:{local_time.tm_min}, Segundo:{local_time.tm_sec}, 0")
 
         logging.info("Hora do sistema atualizada com sucesso.")
+        
+        return True
+       
+         
     except Exception as e:
         logging.error(f"Erro ao atualizar a hora do sistema: {e}")
+        return False
         
-    root.after(300000, update_windows_time) #5 minutos atualiza a hora do windows
+    
 
 def restart_program():
     # Obtém o caminho para o executável Python
@@ -121,8 +129,12 @@ def open_teamviewer():
         logging.info("Nenhum caminho válido encontrado para o TeamViewer")
 
 def shutdown_computer():
+    logging.info("Removendo marca d'agua de ativação do windows")
+    comando = ["bcdedit", "-set", "TESTSIGNING", "OFF"]
+    subprocess.run(comando)
     logging.info('Usuário apertou CTRL + 4 para desligar o computador')
     subprocess.Popen(["shutdown", "/s", "/t", "0"])
+    
 
 
 def conectar_postgresql(usuario, senha, host, porta, banco_dados):
@@ -362,13 +374,29 @@ def exibir_cronometro():
 
     label = tk.Label(frame, text="O PDV não foi iniciado. Aguardando 15 segundos!", font=("Calibri", 16), bg="blue")
     label.pack()
-
+    
+   
+    
+    labelRelogio = tk.Label(frame, text="Ajustando o relógio", font=("Calibri", 16))
+    labelRelogio.pack()
+    
+         
+    
     segundos_restantes = 15
     while segundos_restantes > 0:
+        
         label.config(text="Aguardando {} segundos para abrir o aplicativo de vendas!".format(segundos_restantes), font=("Calibri", 24), bg="#f2f2f2", foreground="green")
         segundos_restantes -= 1
+        if update_windows_time(ntp_server='time.google.com') :
+         labelRelogio.config(text="Horário atualizado com sucesso!", font=("Calibri", 24), bg="#f2f2f2", foreground="green")
+        
+        else :
+         labelRelogio.config(text="Erro ao atualizar data e hora pela internet", font=("Calibri", 24), bg="#f2f2f2", foreground="red")
+        
         root.update()
         time.sleep(1)
+        
+        
 
         if verificar_processo("UniNfce.exe"):
             label.config(text="UniNfce foi iniciado! ...")
@@ -376,13 +404,13 @@ def exibir_cronometro():
             time.sleep(2)
             root.destroy() 
             return
-
+    labelRelogio.config(text="", font=("Calibri", 24), bg="#f2f2f2")
     label.config(text="Obrigado pela paciência! Iniciando o aplicativo...")
     root.update()
     time.sleep(2)
     root.destroy()
     segundos_restantes -= 1
-    iniciar_aplicativo("C:/uniplus/uninfce.exe")
+    iniciar_aplicativo("E:/uniplus/uninfce.exe")
 
 # Verificar se o processo está em execução
 if not verificar_processo("UniNfce.exe"):
@@ -402,21 +430,21 @@ def update_status():
     if server_ip:
         # Se o IP do servidor foi carregado com sucesso
         if check_network_connection(server_ip) == "Conectado":
-            status_label.config(text="Conectado ao "+ servidor["descricao"] , foreground="green")
-            icon_label.config(image=connected_icon)
+            status_label.config(text="Conectado ao "+ servidor["descricao"] , foreground="white" , background="green")
+            icon_label.config(image=connected_icon )
             if check_internet_connection("www.google.com"):
-                internet_status_label.config(text="| Conectado à internet |" , foreground="green")
+                internet_status_label.config(text="| Conectado à internet |" , foreground="white" , background="green")
                 
             else:
-                internet_status_label.config(text="| Desconectado da internet |" , foreground="red")
+                internet_status_label.config(text="| Desconectado da internet |" , foreground="white", background="red")
               
         else:
-            status_label.config(text="Desconectado do "+servidor["descricao"], foreground="red")
-            icon_label.config(image=disconnected_icon)
+            status_label.config(text="Desconectado do "+servidor["descricao"], foreground="white", background="red")
+            icon_label.config(image=disconnected_icon )
             if check_internet_connection("www.google.com"):
-                internet_status_label.config(text="| Conectado à internet |" , foreground="green")
+                internet_status_label.config(text="| Conectado à internet |" , foreground="white" , background="green")
             else:
-                internet_status_label.config(text="| Desconectado da internet |", foreground="red")
+                internet_status_label.config(text="| Desconectado da internet |",foreground="white" , background="red")
                
            
     else:
@@ -491,8 +519,8 @@ connected_base64 = fundo_base64.connected_base64
 disconnected_base64 = fundo_base64.disconnected_base64
 
 # Largura e altura desejadas para as imagens
-image_width = 10
-image_height = 10
+image_width = 14
+image_height = 14
 
 root = Tk()  # Criar a janela principal
 # Obter a largura da tela
@@ -508,9 +536,9 @@ root.attributes('-topmost', True)
 root.lift()  # Garante que a janela fique acima de todas as outras janelas
 # root.wm_attributes("-transparentcolor", "black" )  # Define a cor branca como transparente
 root.attributes('-alpha', 1.0)  # Define a opacidade da janela 
-root['background'] = 'yellow'
+
 # Defina a cor de fundo
-background_color = "#D9D9D9"
+background_color = "#D3D3D3"
 # Definir a cor de fundo para todos os widgets ttk
 
 
@@ -519,26 +547,29 @@ root.configure(bg=background_color)
 
 root.deiconify()
 
-# Criando a janela principal
-rootRodape = tk.Tk()
-rootRodape.geometry("610x30+0-1")
-
-rootRodape.overrideredirect(True) # Ocultar a janela da lista Alt+Tab
+# Criar a janela
+rootRodape = ctk.CTk()
+ctk.set_appearance_mode('dark')
+rootRodape.geometry("416x30+0+%d" % (rootRodape.winfo_screenheight() - 30)) # Posiciona no canto inferior esquerdo
+rootRodape.overrideredirect(True)  # Ocultar a janela da lista Alt+Tab
 rootRodape.attributes('-topmost', True)
 rootRodape.lift()  # Garante que a janela fique acima de todas as outras janelas
-# root.wm_attributes("-transparentcolor", "black" )  # Define a cor branca como transparente
-rootRodape.attributes('-alpha', 1.0)  # Define a opacidade da janela 
+rootRodape.attributes('-alpha', 1.0)  # Define a opacidade da janela
 rootRodape.configure(background="#D3D3D3")
-# Criando o frame para o rodapé
-footer_frame = tk.Frame(rootRodape)
-footer_frame.place(relx=0, rely=0.0, relwidth=1, relheight=1)
+
+# Obter as dimensões da tela
+screen_width = rootRodape.winfo_screenwidth()
+screen_height = rootRodape.winfo_screenheight()
+
 
 # Labels do rodapé
-label1 = tk.Label(footer_frame, text="| CTRL+1 -> Solicitar Suporte Remoto |", bg="light gray", fg="blue")
-label1.place(relx=0.00, rely=0.5, anchor="w")
+label1 = ctk.CTkLabel(rootRodape, text="| CTRL+1 -> Solicitar Suporte Remoto |", bg_color="light gray", fg_color="blue", compound="left")
 
-label2 = tk.Label(footer_frame, text="| CTRL+4 -> Desligar o Computador |", bg="light gray", fg="red")
-label2.place(relx=1.00, rely=0.5, anchor="e")
+label1.place(relx=0.00, rely=0.98, anchor='sw')  # Ancorar ao canto inferior esquerdo
+
+label2 = ctk.CTkLabel(rootRodape, text="| CTRL+4 -> Desligar o Computador |", bg_color="light gray", fg_color="red", compound="right")
+
+label2.place(relx=0.01, rely=0.98, anchor='sw', x=label1.winfo_width() + 210)  # Ancorar ao canto inferior esquerdo, posicionamento ao lado do primeiro label
 
 
 
@@ -594,7 +625,7 @@ atualizar_data_hora()
 esconder_janela("Backup")
 esconder_janela("Bluetooth")
 
-
+root.after(300000, update_windows_time) #5 minutos atualiza a hora do windows
 root.after(300000 , atualizarIP)
 
 keyboard.add_hotkey('ctrl+1', open_teamviewer)
