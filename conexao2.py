@@ -410,7 +410,7 @@ def exibir_cronometro():
     time.sleep(2)
     root.destroy()
     segundos_restantes -= 1
-    iniciar_aplicativo("E:/uniplus/uninfce.exe")
+    iniciar_aplicativo("C:/uniplus/uninfce.exe")
 
 # Verificar se o processo está em execução
 if not verificar_processo("UniNfce.exe"):
