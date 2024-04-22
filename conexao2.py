@@ -26,7 +26,10 @@ import winerror
 import logging
 import win32gui
 import win32con
+import time
 import ntplib
+from impressora import *
+
 
 
 # Configurar o logger
@@ -63,6 +66,8 @@ def create_lock():
 def release_lock():
     # Remove o arquivo de bloqueio
     os.remove("lockfile")
+
+
 
 def update_windows_time(ntp_server='time.google.com'):
     try:
@@ -192,11 +197,13 @@ def atualizarIP():
     global tipo_servidor
     global filial
     global pdv
+    global impressoraLocal
     
     server_ip = None
     tipo_servidor = None
     filial = None
     pdv = None
+    impressoraLocal = None
     
     conexao = conectar_postgresql("postgres", "postgres", "localhost", "5432", "unico")
     if conexao:
@@ -205,6 +212,7 @@ def atualizarIP():
         resultadoTipoServidor = executar_consulta(conexao, "SELECT valor FROM configuracaopdv WHERE chave='Pdv.TipoServidor' AND perfil='default';")
         resultadoFilial = executar_consulta(conexao, "SELECT valor FROM configuracaopdv WHERE chave='Pdv.Filial' AND perfil='default';")
         resultadoPdv = executar_consulta(conexao, "SELECT valor FROM configuracaopdv WHERE chave='Pdv.Numero' AND perfil='default';")
+        resultadoImressora = executar_consulta(conexao, "SELECT valor FROM configuracaopdv WHERE chave='ImpressoraNaoFiscal.Endereco' AND perfil='default';")
         
         if resultado:
             # Acessando o primeiro elemento da primeira tupla retornada
@@ -218,6 +226,9 @@ def atualizarIP():
         if resultadoPdv:
             # Acessando o primeiro elemento da primeira tupla retornada
             pdv = resultadoPdv[0][0]   
+        if resultadoImressora:
+            # Acessando o primeiro elemento da primeira tupla retornada
+            impressoraLocal = resultadoImressora[0][0]   
             
     fechar_conexao(conexao)
 
@@ -337,6 +348,7 @@ def iniciar_aplicativo(aplicativo_path):
 
 
 
+
 # Função para redimensionar a imagem para o tamanho da tela
 def redimensionar_imagem(image, width, height):
     # Cria uma cópia da imagem para não modificar a original
@@ -377,7 +389,7 @@ def exibir_cronometro():
     
    
     
-    labelRelogio = tk.Label(frame, text="Ajustando o relógio", font=("Calibri", 16))
+    labelRelogio = tk.Label(frame, text="", font=("Calibri", 16))
     labelRelogio.pack()
     
          
@@ -385,14 +397,21 @@ def exibir_cronometro():
     segundos_restantes = 15
     while segundos_restantes > 0:
         
+        
         label.config(text="Aguardando {} segundos para abrir o aplicativo de vendas!".format(segundos_restantes), font=("Calibri", 24), bg="#f2f2f2", foreground="green")
         segundos_restantes -= 1
         if update_windows_time(ntp_server='time.google.com') :
+         
+         labelRelogio.config(text="Ajustando o relógio", font=("Calibri", 16))
+        
          labelRelogio.config(text="Horário atualizado com sucesso!", font=("Calibri", 24), bg="#f2f2f2", foreground="green")
-        
+         root.update()
         else :
-         labelRelogio.config(text="Erro ao atualizar data e hora pela internet", font=("Calibri", 24), bg="#f2f2f2", foreground="red")
+         labelRelogio.config(text="Ajustando o relógio", font=("Calibri", 16))
         
+         labelRelogio.config(text="Erro ao atualizar data e hora pela internet", font=("Calibri", 24), bg="#f2f2f2", foreground="red")
+         root.update()
+         
         root.update()
         time.sleep(1)
         
@@ -410,7 +429,7 @@ def exibir_cronometro():
     time.sleep(2)
     root.destroy()
     segundos_restantes -= 1
-    iniciar_aplicativo("C:/uniplus/uninfce.exe")
+    iniciar_aplicativo("E:/uniplus/uninfce.exe")
 
 # Verificar se o processo está em execução
 if not verificar_processo("UniNfce.exe"):
@@ -459,10 +478,13 @@ def update_status():
     computer_name_label.config(text="|Meu Computador:" + get_computer_name())
 
     # Atualiza o IP do servidor
-    server_ip_label.config(text="|IP do servidor:" + str(server_ip))
+    #server_ip_label.config(text="|IP do servidor:" + str(server_ip))
     
     # Atualiza o IP local
     local_ip_label.config(text="|Meu IP:" + get_local_ip())
+    
+     # Atualiza o status da impressora
+    #local_impressora_label.config(text="| Impressora : " + str(get_printer_status()))
     
     # Atualiza a loja local
    # local_filial_label.config(text="|Filial:" + filial )
@@ -473,8 +495,8 @@ def update_status():
     
     ocultar_da_lista_alt_tab()
     
-    # Agenda a próxima verificação após 1 segundos
-    root.after(1000, update_status)
+    # Agenda a próxima verificação após 5 segundos
+    root.after(5000, update_status)
 
 def ocultar_da_lista_alt_tab():
     root.attributes('-toolwindow', True)  # Define a janela como uma ferramenta (sem barra de título)
@@ -495,7 +517,7 @@ def ocultar_da_lista_alt_tab():
     else:
     # Reiniciar toda a aplicação
        # root.destroy()
-        logging.info('Nao econtrei o uninfce, reiniciando toda a aplicação')
+        logging.info('Nao encontrei o uninfce, reiniciando toda a aplicação')
         restart_program()
     
       
@@ -563,11 +585,11 @@ screen_height = rootRodape.winfo_screenheight()
 
 
 # Labels do rodapé
-label1 = ctk.CTkLabel(rootRodape, text="| CTRL+1 -> Solicitar Suporte Remoto |", bg_color="light gray", fg_color="blue", compound="left")
+label1 = ctk.CTkButton(rootRodape, text="| CTRL+1 -> Solicitar Suporte Remoto |", text_color="white", bg_color="light gray", fg_color="blue", compound="left", command=open_teamviewer, corner_radius=0 , border_width=0 )
 
 label1.place(relx=0.00, rely=0.98, anchor='sw')  # Ancorar ao canto inferior esquerdo
 
-label2 = ctk.CTkLabel(rootRodape, text="| CTRL+4 -> Desligar o Computador |", bg_color="light gray", fg_color="red", compound="right")
+label2 = ctk.CTkButton(rootRodape, text="| CTRL+4 -> Desligar o Computador |", text_color="white", bg_color="light gray", fg_color="red", compound="right" , command=shutdown_computer, corner_radius= 0 , border_width = 0 )
 
 label2.place(relx=0.01, rely=0.98, anchor='sw', x=label1.winfo_width() + 210)  # Ancorar ao canto inferior esquerdo, posicionamento ao lado do primeiro label
 
@@ -605,6 +627,10 @@ server_ip_label.pack(side=LEFT, padx=0)
 local_ip_label = Label(root, text="", font=("Calibri", 10))
 local_ip_label.pack(side=LEFT, padx=0)
 
+# Rótulo para o status da Impressora
+local_impressora_label = Label(root, text="", font=("Calibri", 10))
+local_impressora_label.pack(side=LEFT, padx=0)
+
 # Rótulo para o PDV
 #local_pdv_label = Label(root, text="", font=("Calibri", 12))
 #local_pdv_label.pack(side=LEFT, padx=0)
@@ -624,6 +650,7 @@ update_status()
 atualizar_data_hora()
 esconder_janela("Backup")
 esconder_janela("Bluetooth")
+
 
 root.after(300000, update_windows_time) #5 minutos atualiza a hora do windows
 root.after(300000 , atualizarIP)
